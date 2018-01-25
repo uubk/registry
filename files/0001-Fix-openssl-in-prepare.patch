@@ -1,0 +1,11 @@
+--- a/prepare	2018-01-24 20:41:07.121371742 +0100
++++ b/prepare	2018-01-24 20:41:14.304777332 +0100
+@@ -459,7 +459,7 @@
+ 
+ if customize_crt == 'on' and openssl_installed():
+     shell_stat = subprocess.check_call(["which", "openssl"], stdout=FNULL, stderr=subprocess.STDOUT)
+-    empty_subj = "/C=/ST=/L=/O=/CN=/"
++    empty_subj = "/"
+     private_key_pem = os.path.join(config_dir, "ui", "private_key.pem")
+     root_crt = os.path.join(config_dir, "registry", "root.crt")
+     create_root_cert(empty_subj, key_path=private_key_pem, cert_path=root_crt)

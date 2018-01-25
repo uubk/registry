@@ -1,0 +1,153 @@
+---
+  - name: Install prerequisites
+    become: True
+    apt: name={{ item }} state=present update_cache=yes cache_valid_time=1800
+    with_items:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg2
+      - software-properties-common
+
+  - name: Add docker repository key
+    become: True
+    apt_key: url="https://download.docker.com/linux/debian/gpg"
+
+  - name: Add docker repository
+    become: True
+    apt_repository: repo="deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable" state=present
+    register: repochanged
+
+  - name: Refresh apt cache
+    when: repochanged.changed
+    become: True
+    apt: update_cache=yes
+
+  - name: Install Harbor runtime
+    become: True
+    apt: name={{ item }} state=present update_cache=yes cache_valid_time=1800
+    with_items:
+      - docker-ce
+      - docker-compose
+
+  - name: Check Harbor source directory
+    stat: path=/opt/harbor
+    register: harbordir
+    changed_when: False
+
+    # Starting with 1.4.0-rc1, downloads are moved:
+  - name: Download latest Harbor setup
+    become: True
+    when: not harbordir.stat.exists
+    unarchive: remote_src=yes dest=/opt src=https://storage.googleapis.com/harbor-releases/refs/tags/v{{ harbor_version }}/harbor-online-installer-v{{ harbor_version }}.tgz
+
+    #  - name: Download latest Harbor setup
+    #    become: True
+    #    when: not harbordir.stat.exists
+    #    unarchive: remote_src=yes dest=/opt src=https://storage.googleapis.com/harbor-releases/harbor-online-installer-v{{ harbor_version }}.tgz
+
+  - name: Configure harbor
+    become: True
+    template: src=harbor.cfg.j2 dest=/opt/harbor/harbor.cfg
+
+  - name: Create systemd unit file
+    become: True
+    template: src=harbor.service.j2 dest=/etc/systemd/system/harbor.service owner=root group=root mode=0644
+    register: systemdunit
+
+  - name: Reload systemd
+    become: True
+    when: systemdunit.changed
+    command: systemctl daemon-reload
+
+  - name: Enable harbor service
+    become: True
+    service: name=harbor enabled=yes
+
+  - name: Upload dummy certs
+    become: True
+    copy: src={{ item }} dest=/opt/harbor/{{ item }}
+    with_items:
+      - server.pem
+      - server.key
+
+  - name: Bug 2920 - Check if prepare script has been fixed
+    become: True
+    command: grep -Fq 'empty_subj = "/C=/ST=/L=/O=/CN=/"' /opt/harbor/prepare
+    register: checkpatch
+    changed_when: False
+    failed_when: False
+
+  - name: Bug 2920 - Upload patch file
+    when: checkpatch.rc == 0
+    become: True
+    copy: src=0001-Fix-openssl-in-prepare.patch dest=/opt/harbor/.0001.patch
+
+  - name: Bug 2920 - Patch prepare script
+    when: checkpatch.rc == 0
+    become: True
+    shell: patch -p1 < .0001.patch
+    args:
+      chdir: /opt/harbor
+
+  - name: Check if harbor has been installed yet
+    become: True
+    stat: path=/opt/harbor/common/config
+    register: hinst
+    changed_when: False
+
+  - name: Stop system nginx as harbor probably has not been patched yet
+    become: True
+    when: not hinst.stat.exists
+    service: name=nginx state=stopped
+
+  - name: Install harbor
+    become: True
+    when: not hinst.stat.exists
+    shell: ./install.sh --with-notary --with-clair
+    args:
+      chdir: /opt/harbor
+    register: install
+
+  - name: Stop fresh harbor instance
+    become: True
+    when: not hinst.stat.exists
+    shell: /usr/bin/docker-compose -f ./docker-compose.yml -f ./docker-compose.notary.yml -f ./docker-compose.clair.yml down
+    args:
+      chdir: /opt/harbor
+
+  - name: Restart system nginx
+    become: True
+    when: not hinst.stat.exists
+    service: name=nginx state=restarted
+
+  - name: NGINX - Check if docker compose file has been adjusted
+    become: True
+    command: grep -Fq ' 80:80' /opt/harbor/docker-compose.yml
+    register: checkngx
+    changed_when: False
+    failed_when: False
+
+  - name: NGINX - Upload docker compose file patch
+    when: checkngx.rc == 0
+    become: True
+    template: src=0002-Fix-nginx-behind-nginx.patch dest=/opt/harbor/.0002.patch
+
+  - name: NGINX - Patch docker compose file
+    when: checkngx.rc == 0
+    become: True
+    notify: restart harbor
+    shell: patch -p1 < .0002.patch
+    args:
+      chdir: /opt/harbor
+
+  - name: NGINX - Upload nginx container config
+    become: True
+    template: src=nginx.conf.j2 dest=/opt/harbor/common/config/nginx/nginx.conf
+    notify: restart harbor
+
+  - name: Upload nginx proxy config
+    become: True
+    template: src=harbor-proxy.conf.j2 dest=/etc/nginx/base.d/harbor-proxy.conf
+    notify: restart nginx
+# vim: set ts=8 sw=2 tw=0 et :

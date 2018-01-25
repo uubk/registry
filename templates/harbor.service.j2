@@ -1,0 +1,18 @@
+[Unit]
+Description=Harbor docker registry
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=on-failure
+Type=simple
+WorkingDirectory=/opt/harbor
+ExecStart=/usr/bin/docker-compose -f ./docker-compose.yml -f ./docker-compose.notary.yml -f ./docker-compose.clair.yml up
+ExecStop=/usr/bin/docker-compose -f ./docker-compose.yml -f ./docker-compose.notary.yml -f ./docker-compose.clair.yml down
+# systemd does not see what docker does -> give docker some time to work
+TimeoutSec=180
+# Wait 5 seconds before starting it again
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

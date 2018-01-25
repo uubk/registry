@@ -1,0 +1,19 @@
+# Change these:
+harbor_host: registry.example.org
+notary_host: notary.example.org
+
+harbor_mysql_root_pwd: False
+harbor_postgres_clair_pwd: False
+harbor_default_admin_pwd: False
+
+# Allow self registration?
+harbor_selfreg: off
+# Who can create projects?
+harbor_project_creation: adminonly
+
+# Which version to install (initially)
+harbor_version: 1.4.0-rc1
+# Append new versions here. Have a look at the original dockerfile
+harbor_version_to_nginx:
+  1.3.0: 1.11.13
+  1.4.0-rc1: v1.4.0-rc1

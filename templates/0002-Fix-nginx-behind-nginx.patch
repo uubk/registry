@@ -1,0 +1,24 @@
+--- a/docker-compose.yml	2018-01-25 02:12:26.676356740 +0100
++++ b/docker-compose.yml	2018-01-25 02:12:45.174823112 +0100
+@@ -112,7 +112,7 @@
+         syslog-address: "tcp://127.0.0.1:1514"
+         tag: "jobservice"
+   proxy:
+-    image: vmware/nginx-photon:{{ harbor_version_to_nginx[harbor_version] }}
++    image: nginx:stable-alpine
+     container_name: nginx
+     restart: always
+     volumes:
+@@ -120,9 +120,9 @@
+     networks:
+       - harbor
+     ports:
+-      - 80:80
+-      - 443:443
+-      - 4443:4443
++      - 8080:80
++      - 8443:443
++      - 8444:4443
+     depends_on:
+       - mysql
+       - registry
