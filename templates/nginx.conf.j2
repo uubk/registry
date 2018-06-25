@@ -20,7 +20,7 @@ http {
   upstream ui {
     server ui:8080;
   }
-  
+
   log_format timed_combined '$remote_addr - '
     '"$request" $status $body_bytes_sent '
     '"$http_referer" "$http_user_agent" '
@@ -33,11 +33,11 @@ http {
 
   server {
     listen 80;
-    server_name notary.njsm.de;
- 
+    server_name {{ notary_host }};
+
     # disable any limits to avoid HTTP 413 for large image uploads
     client_max_body_size 0;
-  
+
     # required to avoid HTTP 411: see Issue #1486 (https://github.com/docker/docker/issues/1486)
     chunked_transfer_encoding on;
 
@@ -59,12 +59,12 @@ http {
 
   server {
     listen 80;
-    server_name registry.njsm.de;
+    server_name {{ harbor_host }};
     server_tokens off;
- 
+
     # disable any limits to avoid HTTP 413 for large image uploads
     client_max_body_size 0;
-  
+
     # required to avoid HTTP 411: see Issue #1486 (https://github.com/docker/docker/issues/1486)
     chunked_transfer_encoding on;
 
@@ -76,9 +76,9 @@ http {
       proxy_set_header Host $http_host;
       proxy_set_header X-Real-IP $remote_addr;
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      
+
       proxy_set_header X-Forwarded-Proto "https";
-      
+
       # Add Secure flag when serving HTTPS
       proxy_cookie_path / "/; secure";
 
@@ -95,9 +95,9 @@ http {
       proxy_set_header Host $http_host;
       proxy_set_header X-Real-IP $remote_addr;
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      
+
       proxy_set_header X-Forwarded-Proto "https";
-      
+
       proxy_buffering off;
       proxy_request_buffering off;
     }
@@ -107,13 +107,13 @@ http {
       proxy_set_header Host $http_host;
       proxy_set_header X-Real-IP $remote_addr;
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      
+
       proxy_set_header X-Forwarded-Proto "https";
 
       proxy_buffering off;
       proxy_request_buffering off;
     }
-	
+
     location /service/notifications {
       return 404;
     }
