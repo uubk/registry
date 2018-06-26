@@ -12,8 +12,8 @@ harbor_selfreg: off
 harbor_project_creation: adminonly
 
 # Which version to install (initially)
-harbor_version: 1.4.0-rc1
-# Append new versions here. Have a look at the original dockerfile
-harbor_version_to_nginx:
-  1.3.0: 1.11.13
-  1.4.0-rc1: v1.4.0-rc1
+harbor_version: 1.5.1
+harbor_version_major: 1.5.0
+
+# You'd normally choose online, but online installers might lag more than a few weeks behind...
+harbor_installer_type: offline

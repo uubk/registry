@@ -35,12 +35,18 @@
     register: harbordir
     changed_when: False
 
-    # Starting with 1.4.0-rc1, downloads are moved:
   - name: Download latest Harbor setup
     become: True
     when: not harbordir.stat.exists
-    unarchive: remote_src=yes dest=/opt src=https://storage.googleapis.com/harbor-releases/refs/tags/v{{ harbor_version }}/harbor-online-installer-v{{ harbor_version }}.tgz
+    unarchive: remote_src=yes dest=/opt src=https://storage.googleapis.com/harbor-releases/release-{{ harbor_version_major }}/harbor-{{ harbor_installer_type }}-installer-v{{ harbor_version }}.tgz
 
+    # RCs until 1.4.0-rc2 are located somewhere else:
+    #  - name: Download latest Harbor setup
+    #    become: True
+    #    when: not harbordir.stat.exists
+    #    unarchive: remote_src=yes dest=/opt src=https://storage.googleapis.com/harbor-releases/refs/tags/v{{ harbor_version }}/harbor-online-installer-v{{ harbor_version }}.tgz
+
+    # Releases pre 1.4 are located here.
     #  - name: Download latest Harbor setup
     #    become: True
     #    when: not harbordir.stat.exists
@@ -101,6 +107,15 @@
     when: not hinst.stat.exists
     service: name=nginx state=stopped
 
+  - name: Patch compose file
+    become: True
+    when: not hinst.stat.exists
+    shell: |
+      sed -i 's/- 80:80/- 8080:80/g' /opt/harbor/docker-compose.yml && \
+      sed -i 's/- 443:443/- 8443:443/g' /opt/harbor/docker-compose.yml && \
+      sed -i 's/- 4443:4443/- 8444:4443/g' /opt/harbor/docker-compose.yml && \
+      sed -i 's/vmware\/nginx-photon:.*/nginx:stable-alpine/g' /opt/harbor/docker-compose.yml
+
   - name: Install harbor
     become: True
     when: not hinst.stat.exists
@@ -121,25 +136,25 @@
     when: not hinst.stat.exists
     service: name=nginx state=restarted
 
-  - name: NGINX - Check if docker compose file has been adjusted
-    become: True
-    command: grep -Fq ' 80:80' /opt/harbor/docker-compose.yml
-    register: checkngx
-    changed_when: False
-    failed_when: False
-
-  - name: NGINX - Upload docker compose file patch
-    when: checkngx.rc == 0
-    become: True
-    template: src=0002-Fix-nginx-behind-nginx.patch dest=/opt/harbor/.0002.patch
-
-  - name: NGINX - Patch docker compose file
-    when: checkngx.rc == 0
-    become: True
-    notify: restart harbor
-    shell: patch -p1 < .0002.patch
-    args:
-      chdir: /opt/harbor
+    #  - name: NGINX - Check if docker compose file has been adjusted
+    #    become: True
+    #    command: grep -Fq ' 80:80' /opt/harbor/docker-compose.yml
+    #    register: checkngx
+    #    changed_when: False
+    #    failed_when: False
+    #
+    #  - name: NGINX - Upload docker compose file patch
+    #    when: checkngx.rc == 0
+    #    become: True
+    #    template: src=0002-Fix-nginx-behind-nginx.patch dest=/opt/harbor/.0002.patch
+    #
+    #  - name: NGINX - Patch docker compose file
+    #    when: checkngx.rc == 0
+    #    become: True
+    #    notify: restart harbor
+    #    shell: patch -F30 -p1 < .0002.patch
+    #    args:
+    #      chdir: /opt/harbor
 
   - name: NGINX - Upload nginx container config
     become: True
