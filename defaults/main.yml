@@ -17,3 +17,23 @@ harbor_version_major: 1.5.0
 
 # You'd normally choose online, but online installers might lag more than a few weeks behind...
 harbor_installer_type: offline
+
+harbor_job_workers: 10
+
+# How should Harbor authenticate users (db_auth or ldap_auth)?
+harbor_auth_type: "db_auth"
+
+# LDAP settings
+harbor_ldap_url: "ldaps://ldap.example.org"
+harbor_ldap_need_searchdn: False
+harbor_ldap_search_dn: "uid=searchuser,ou=people,dc=example,dc=org"
+harbor_ldap_search_password: "Super$ecret"
+harbor_ldap_base_dn: "ou=people,dc=example,dc=org"
+harbor_ldap_filter: "(objectClass=person)"
+harbor_ldap_userid_attribute: "uid"
+harbor_ldap_timeout: 5
+harbor_ldap_verify_certificate: True
+# Additional LDAP settings for group (Harbor >= 1.5.0)
+harbor_ldap_group_base_dn: "ou=group,dc=example,dc=org"
+harbor_ldap_group_filter: "objectclass=group"
+harbor_ldap_groupid_attribute: "cn"

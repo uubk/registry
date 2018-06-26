@@ -124,6 +124,11 @@
       chdir: /opt/harbor
     register: install
 
+  - name: Delay execution slightly to give containers time to start properly
+    when: not hinst.stat.exists
+    pause:
+      seconds: 20
+
   - name: Stop fresh harbor instance
     become: True
     when: not hinst.stat.exists

@@ -15,7 +15,7 @@ ui_url_protocol = https
 db_password = {{ harbor_mysql_root_pwd }}
 
 #Maximum number of job workers in job service
-max_job_workers = 3
+max_job_workers = {{ harbor_job_workers }}
 
 #Determine whether or not to generate certificate for the registry's token.
 #If the value is on, the prepare script creates new root cert and private key
@@ -76,45 +76,47 @@ harbor_admin_password = {{ harbor_default_admin_pwd }}
 
 ##By default the auth mode is db_auth, i.e. the credentials are stored in a local database.
 #Set it to ldap_auth if you want to verify a user's credentials against an LDAP server.
-auth_mode = db_auth
+auth_mode = {{ harbor_auth_type }}
 
 #The url for an ldap endpoint.
-ldap_url = ldaps://ldap.mydomain.com
+ldap_url = {{ harbor_ldap_url }}
 
 #A user's DN who has the permission to search the LDAP/AD server.
 #If your LDAP/AD server does not support anonymous search, you should configure this DN and ldap_search_pwd.
-#ldap_searchdn = uid=searchuser,ou=people,dc=mydomain,dc=com
+{% if harbor_ldap_need_searchdn %}
+ldap_searchdn = {{ harbor_ldap_search_dn }}
 
 #the password of the ldap_searchdn
-#ldap_search_pwd = password
+ldap_search_pwd = {{ harbor_ldap_search_password }}
+{% endif %}
 
 #The base DN from which to look up a user in LDAP/AD
-ldap_basedn = ou=people,dc=mydomain,dc=com
+ldap_basedn = {{ harbor_ldap_base_dn }}
 
 #Search filter for LDAP/AD, make sure the syntax of the filter is correct.
-#ldap_filter = (objectClass=person)
+ldap_filter = {{ harbor_ldap_filter }}
 
 # The attribute used in a search to match a user, it could be uid, cn, email, sAMAccountName or other attributes depending on your LDAP/AD
-ldap_uid = uid
+ldap_uid = {{ harbor_ldap_userid_attribute }}
 
 #the scope to search for users, 0-LDAP_SCOPE_BASE, 1-LDAP_SCOPE_ONELEVEL, 2-LDAP_SCOPE_SUBTREE
 ldap_scope = 2
 
 #Timeout (in seconds)  when connecting to an LDAP Server. The default value (and most reasonable) is 5 seconds.
-ldap_timeout = 5
+ldap_timeout = {{ harbor_ldap_timeout }}
 
 #Verify certificate from LDAP server
-ldap_verify_cert = true
+ldap_verify_cert = {% if harbor_ldap_verify_certificate %}true{% else %}false {% endif %}
 
 {% if harbor_version is version_compare('1.5.0', '>') %}
 #The base dn from which to lookup a group in LDAP/AD
-ldap_group_basedn = ou=group,dc=mydomain,dc=com
+ldap_group_basedn = {{ harbor_ldap_group_base_dn }}
 
 #filter to search LDAP/AD group
-ldap_group_filter = objectclass=group
+ldap_group_filter = {{ harbor_ldap_group_filter }}
 
 #The attribute used to name a LDAP/AD group, it could be cn, name
-ldap_group_gid = cn
+ldap_group_gid = {{ harbor_ldap_groupid_attribute }}
 
 #The scope to search for ldap groups. 0-LDAP_SCOPE_BASE, 1-LDAP_SCOPE_ONELEVEL, 2-LDAP_SCOPE_SUBTREE
 ldap_group_scope = 2
